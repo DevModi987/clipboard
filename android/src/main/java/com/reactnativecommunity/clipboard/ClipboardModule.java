@@ -7,6 +7,7 @@
 
 package com.reactnativecommunity.clipboard;
 
+import android.os.PersistableBundle;
 import android.annotation.TargetApi;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
@@ -100,15 +101,33 @@ public class ClipboardModule extends NativeClipboardModuleSpec {
     promise.reject("Clipboard:setImage", "setImage is not supported on Android");
   }
 
+  // @ReactMethod
+  // public void setString(String text) {
+  //   try {
+  //     ClipData clipdata = ClipData.newPlainText(null, text);
+  //     ClipboardManager clipboard = getClipboardService();
+  //     clipboard.setPrimaryClip(clipdata);
+  //   } catch (Exception e) {
+  //     e.printStackTrace();
+  //   }
+  // }
+
   @ReactMethod
   public void setString(String text) {
-    try {
-      ClipData clipdata = ClipData.newPlainText(null, text);
-      ClipboardManager clipboard = getClipboardService();
-      clipboard.setPrimaryClip(clipdata);
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+      ReactApplicationContext context = getReactApplicationContext();
+      ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+
+      // Pass null label, system will handle preview or suppress as needed
+      ClipData clip = ClipData.newPlainText(null, text);
+
+      // Prevent preview on Android 13+ for sensitive data
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+          PersistableBundle extras = new PersistableBundle();
+          extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+          clip.getDescription().setExtras(extras);
+      }
+
+      clipboard.setPrimaryClip(clip);
   }
 
   @Override
